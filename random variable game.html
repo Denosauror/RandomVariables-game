@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Random Variables — Gen Math Class Game</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600;700&display=swap');
+
+:root {
+  --pink: #ff006e;
+  --blue: #3a86ff;
+  --yellow: #ffbe0b;
+  --green: #06d6a0;
+  --purple: #8338ec;
+  --bg: #0a0a0f;
+  --card: #12121a;
+  --border: rgba(255,255,255,0.08);
+  --text: #f0f0f5;
+  --muted: rgba(240,240,245,0.45);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* BG GRID */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(58,134,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58,134,255,0.04) 1px, transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
+
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%, rgba(131,56,236,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 90%, rgba(58,134,255,0.10) 0%, transparent 70%);
+  pointer-events:none;
+  z-index:0;
+}
+
+.screen { display:none; min-height:100vh; position:relative; z-index:1; }
+.screen.active { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+@keyframes popIn  { from{opacity:0;transform:scale(.8)} to{opacity:1;transform:scale(1)} }
+@keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:.6} }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes scorePop { 0%{transform:scale(1)} 40%{transform:scale(1.35)} 100%{transform:scale(1)} }
+@keyframes slideDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes firework { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
+
+/* ═══════════════════════════════
+   TITLE SCREEN
+═══════════════════════════════ */
+#title-screen { padding:30px 20px; gap:28px; text-align:center; }
+
+.logo-wrap { animation:fadeUp .6s ease both; }
+.logo-subject {
+  font-size:clamp(11px,2vw,13px);
+  letter-spacing:5px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+.logo-title {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(36px,7vw,72px);
+  font-weight:800;
+  line-height:1.05;
+  background:linear-gradient(135deg,var(--pink),var(--purple),var(--blue));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.logo-sub {
+  font-size:clamp(13px,2.5vw,17px);
+  color:var(--muted);
+  font-weight:600;
+  margin-top:6px;
+}
+
+/* Lesson pills */
+.lesson-pills {
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  flex-wrap:wrap;
+  animation:fadeUp .6s .1s ease both;
+}
+.pill {
+  border-radius:50px;
+  padding:8px 20px;
+  font-size:14px;
+  font-weight:700;
+  border:1.5px solid;
+}
+.pill-1 { border-color:var(--yellow); color:var(--yellow); background:rgba(255,190,11,.08); }
+.pill-2 { border-color:var(--pink);   color:var(--pink);   background:rgba(255,0,110,.08); }
+.pill-3 { border-color:var(--blue);   color:var(--blue);   background:rgba(58,134,255,.08); }
+
+/* Setup card */
+.setup-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:30px;
+  width:100%;
+  max-width:680px;
+  animation:fadeUp .6s .2s ease both;
+}
+.setup-card h2 {
+  font-family:'Syne',sans-serif;
+  font-size:20px;
+  font-weight:800;
+  margin-bottom:20px;
+  color:var(--yellow);
+}
+
+.teams-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+.team-input-card {
+  border-radius:16px;
+  padding:18px;
+  border:1.5px solid;
+}
+.team-input-card.t1 { border-color:var(--pink); background:rgba(255,0,110,.06); }
+.team-input-card.t2 { border-color:var(--blue); background:rgba(58,134,255,.06); }
+.team-input-card label {
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+.t1 label { color:var(--pink); }
+.t2 label { color:var(--blue); }
+
+.team-input-card input {
+  width:100%;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px;
+  padding:10px 14px;
+  color:white;
+  font-family:'DM Sans',sans-serif;
+  font-size:15px;
+  font-weight:700;
+  outline:none;
+  transition:border-color .3s;
+}
+.t1 input:focus { border-color:var(--pink); }
+.t2 input:focus { border-color:var(--blue); }
+
+/* Buttons */
+.btn {
+  font-family:'Syne',sans-serif;
+  font-weight:800;
+  border:none;
+  border-radius:14px;
+  padding:14px 36px;
+  font-size:18px;
+  cursor:pointer;
+  transition:all .25s;
+  letter-spacing:.5px;
+}
+.btn:hover:not(:disabled) { transform:translateY(-2px); filter:brightness(1.1); }
+.btn:active { transform:scale(.97); }
+.btn:disabled { opacity:.35; cursor:not-allowed; }
+
+.btn-start  { background:linear-gradient(135deg,var(--pink),var(--purple)); color:#fff; box-shadow:0 8px 30px rgba(131,56,236,.4); }
+.btn-reveal { background:linear-gradient(135deg,#f77f00,var(--yellow)); color:#111; box-shadow:0 6px 20px rgba(255,190,11,.35); }
+.btn-next   { background:linear-gradient(135deg,var(--green),#028090); color:#111; box-shadow:0 6px 20px rgba(6,214,160,.35); }
+.btn-sm     { padding:9px 20px; font-size:13px; border-radius:10px; }
+.btn-t1     { background:linear-gradient(135deg,#b5002f,var(--pink)); color:#fff; box-shadow:0 6px 20px rgba(255,0,110,.3); }
+.btn-t2     { background:linear-gradient(135deg,#1d3d8c,var(--blue)); color:#fff; box-shadow:0 6px 20px rgba(58,134,255,.3); }
+.btn-skip   { background:rgba(255,255,255,.06); color:var(--muted); border:1px solid var(--border); padding:9px 20px; font-size:13px; border-radius:10px; font-family:'DM Sans',sans-serif; font-weight:700; cursor:pointer; transition:all .25s; }
+.btn-skip:hover { background:rgba(255,255,255,.1); color:var(--text); }
+
+/* ═══════════════════════════════
+   GAME SCREEN
+═══════════════════════════════ */
+#game-screen { padding:0; justify-content:flex-start; }
+
+/* Header */
+.g-header {
+  width:100%;
+  background:rgba(18,18,26,.9);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+  padding:14px 24px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:20px;
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+
+.score-block { display:flex; align-items:center; gap:14px; }
+.score-block.right { flex-direction:row-reverse; }
+
+.score-avatar {
+  width:48px; height:48px;
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px;
+  flex-shrink:0;
+}
+.sb-t1 .score-avatar { background:rgba(255,0,110,.15); border:1.5px solid var(--pink); }
+.sb-t2 .score-avatar { background:rgba(58,134,255,.15); border:1.5px solid var(--blue); }
+
+.score-info {}
+.score-tname { font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+.sb-t1 .score-tname { color:var(--pink); }
+.sb-t2 .score-tname { color:var(--blue); }
+.score-val {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(26px,4vw,36px);
+  font-weight:800;
+  line-height:1;
+}
+.sb-t1 .score-val { color:var(--pink); }
+.sb-t2 .score-val { color:var(--blue); }
+
+.g-center { text-align:center; }
+.g-qcount { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--yellow); }
+.g-part-label { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+.g-progress { width:100px; height:4px; background:rgba(255,255,255,.08); border-radius:2px; margin:6px auto 0; }
+.g-progress-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--pink),var(--blue)); transition:width .5s ease; }
+
+/* Main content */
+.g-body {
+  width:100%;
+  max-width:860px;
+  margin:0 auto;
+  padding:28px 20px 40px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+/* Part badge */
+.part-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 16px;
+  border-radius:50px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  align-self:flex-start;
+}
+.part-badge.part1 { background:rgba(255,190,11,.1); border:1px solid rgba(255,190,11,.4); color:var(--yellow); }
+.part-badge.part2 { background:rgba(131,56,236,.1); border:1px solid rgba(131,56,236,.4); color:#c77dff; }
+
+/* Question card */
+.q-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:clamp(22px,5vw,44px);
+  position:relative;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  animation:fadeUp .4s ease both;
+}
+
+.q-type-label {
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:14px;
+}
+
+.q-text {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(18px,3.5vw,28px);
+  font-weight:700;
+  line-height:1.45;
+  color:var(--text);
+}
+
+/* For table questions */
+.q-table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:16px;
+  font-size:clamp(13px,2vw,16px);
+}
+.q-table th {
+  background:rgba(255,255,255,.06);
+  padding:10px 14px;
+  text-align:center;
+  font-weight:700;
+  border-bottom:1px solid var(--border);
+  font-size:12px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.q-table td {
+  padding:10px 14px;
+  text-align:center;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  font-weight:600;
+}
+.q-table .blank { color:var(--yellow); font-weight:800; letter-spacing:2px; }
+
+/* Answer choices */
+.choices-grid { display:grid; gap:12px; }
+.choices-grid.two-col { grid-template-columns:1fr 1fr; }
+.choices-grid.one-col { grid-template-columns:1fr; }
+
+.choice-btn {
+  background:rgba(255,255,255,.04);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:14px;
+  padding:16px 22px;
+  text-align:left;
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  font-size:clamp(14px,2.5vw,17px);
+  font-weight:700;
+  color:var(--text);
+  transition:all .25s;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  position:relative;
+  overflow:hidden;
+}
+.choice-btn:hover:not(:disabled):not(.locked) {
+  background:rgba(255,255,255,.09);
+  border-color:rgba(255,255,255,.3);
+  transform:translateX(4px);
+}
+.choice-btn .choice-letter {
+  width:32px; height:32px;
+  border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Syne',sans-serif;
+  font-size:14px;
+  font-weight:800;
+  background:rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+.choice-btn.correct-anim {
+  background:rgba(6,214,160,.12);
+  border-color:var(--green);
+  color:var(--green);
+}
+.choice-btn.correct-anim .choice-letter { background:var(--green); color:#000; }
+.choice-btn.wrong-anim {
+  background:rgba(239,35,60,.1);
+  border-color:#ef233c;
+  color:#ef233c;
+  opacity:.6;
+}
+.choice-btn.locked { cursor:default; }
+
+/* For D/C type questions */
+.dc-buttons { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.dc-btn {
+  border:none;
+  border-radius:18px;
+  padding:24px 16px;
+  font-family:'Syne',sans-serif;
+  font-size:clamp(18px,3.5vw,28px);
+  font-weight:800;
+  cursor:pointer;
+  transition:all .3s;
+  letter-spacing:.5px;
+}
+.dc-btn:hover:not(:disabled):not(.locked) { transform:scale(1.04) translateY(-2px); }
+.dc-btn:disabled { opacity:.45; cursor:not-allowed; }
+.dc-btn.locked { cursor:default; transform:none !important; }
+.dc-discrete   { background:linear-gradient(135deg,#7b0048,var(--pink)); color:#fff; box-shadow:0 8px 30px rgba(255,0,110,.35); }
+.dc-continuous { background:linear-gradient(135deg,#1d3d8c,var(--blue)); color:#fff; box-shadow:0 8px 30px rgba(58,134,255,.35); }
+.dc-btn.correct-dc { box-shadow:0 0 0 3px var(--green), 0 8px 30px rgba(6,214,160,.4) !important; }
+.dc-btn.wrong-dc   { opacity:.35; transform:scale(.97) !important; }
+
+/* Answer reveal box */
+.answer-reveal {
+  background:rgba(6,214,160,.07);
+  border:1.5px solid rgba(6,214,160,.35);
+  border-radius:14px;
+  padding:16px 20px;
+  display:none;
+  animation:slideDown .4s ease both;
+}
+.answer-reveal.show { display:block; }
+.ar-label { font-size:11px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--green); margin-bottom:6px; }
+.ar-text { font-size:clamp(14px,2.5vw,17px); font-weight:700; color:var(--text); }
+.ar-explain { font-size:clamp(12px,2vw,14px); color:var(--muted); margin-top:6px; font-style:italic; }
+
+/* Who answered panel */
+.who-panel {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:18px 22px;
+  display:none;
+  animation:slideDown .3s ease;
+}
+.who-panel.show { display:block; }
+.who-label { font-size:12px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+.who-btns { display:flex; gap:10px; flex-wrap:wrap; }
+
+/* Controls bar */
+.controls-bar {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+/* Points toast */
+.pts-toast {
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:var(--card);
+  border:2px solid var(--yellow);
+  border-radius:20px;
+  padding:20px 40px;
+  text-align:center;
+  z-index:200;
+  display:none;
+  animation:popIn .35s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 0 60px rgba(255,190,11,.3);
+}
+.pts-toast.show { display:block; }
+.pts-toast-val { font-family:'Syne',sans-serif; font-size:48px; font-weight:800; color:var(--yellow); }
+.pts-toast-team { font-size:16px; font-weight:700; color:var(--muted); margin-top:4px; }
+
+/* Score pop animation class */
+.score-pop { animation:scorePop .4s ease; }
+
+/* ═══════════════════════════════
+   PART TRANSITION SCREEN
+═══════════════════════════════ */
+#transition-screen {
+  text-align:center;
+  gap:22px;
+  padding:40px 20px;
+}
+.trans-badge {
+  font-size:clamp(12px,2vw,14px);
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--purple);
+  font-weight:700;
+}
+.trans-title {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(32px,6vw,60px);
+  font-weight:800;
+  line-height:1.1;
+  background:linear-gradient(135deg,var(--pink),var(--purple),var(--blue));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.trans-desc {
+  font-size:clamp(14px,2.5vw,18px);
+  color:var(--muted);
+  max-width:560px;
+  font-weight:600;
+  line-height:1.6;
+}
+.trans-score-preview {
+  display:flex;
+  gap:20px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.tsp-card {
+  background:var(--card);
+  border-radius:16px;
+  padding:16px 30px;
+  border:1px solid var(--border);
+  text-align:center;
+}
+.tsp-name { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:2px; }
+.tsp-score { font-family:'Syne',sans-serif; font-size:40px; font-weight:800; }
+.tsp-card.t1 .tsp-name { color:var(--pink); }
+.tsp-card.t1 .tsp-score { color:var(--pink); }
+.tsp-card.t2 .tsp-name { color:var(--blue); }
+.tsp-card.t2 .tsp-score { color:var(--blue); }
+
+/* ═══════════════════════════════
+   END SCREEN
+═══════════════════════════════ */
+#end-screen { text-align:center; gap:24px; padding:40px 20px; }
+.end-winner {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(36px,7vw,72px);
+  font-weight:800;
+  line-height:1.1;
+}
+.end-sub { font-size:clamp(14px,2.5vw,20px); color:var(--muted); font-weight:600; }
+.final-cards { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; }
+.final-card {
+  background:var(--card);
+  border-radius:20px;
+  padding:28px 44px;
+  border:2px solid;
+  text-align:center;
+}
+.final-card.t1 { border-color:var(--pink); }
+.final-card.t2 { border-color:var(--blue); }
+.fc-name { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:2px; }
+.fc-score { font-family:'Syne',sans-serif; font-size:72px; font-weight:800; line-height:1; }
+.final-card.t1 .fc-name { color:var(--pink); }
+.final-card.t1 .fc-score { color:var(--pink); }
+.final-card.t2 .fc-name { color:var(--blue); }
+.final-card.t2 .fc-score { color:var(--blue); }
+
+/* Firework */
+.fw-dot { position:fixed; border-radius:50%; pointer-events:none; z-index:300; animation:firework .8s ease-out forwards; }
+
+/* RESPONSIVE */
+@media(max-width:560px) {
+  .teams-row { grid-template-columns:1fr; }
+  .choices-grid.two-col { grid-template-columns:1fr; }
+  .dc-buttons { grid-template-columns:1fr; }
+  .g-header { grid-template-columns:1fr 1fr; }
+  .g-center { grid-column:1/-1; order:-1; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ TITLE SCREEN ══════════ -->
+<div class="screen active" id="title-screen">
+  <div class="logo-wrap">
+    <p class="logo-subject">Grade 11 ABM · General Mathematics</p>
+    <h1 class="logo-title">Random Variables<br>Class Game</h1>
+    <p class="logo-sub">Whole-class activity · No timer · Two teams</p>
+  </div>
+
+  <div class="lesson-pills">
+    <span class="pill pill-1">📘 Part 1: Random Variables</span>
+    <span class="pill pill-2">🎯 Part 2: Discrete</span>
+    <span class="pill pill-3">〰️ Part 3: Continuous</span>
+  </div>
+
+  <div class="setup-card">
+    <h2>🏆 Set Up Teams</h2>
+    <div class="teams-row">
+      <div class="team-input-card t1">
+        <label>Team 1 🌸</label>
+        <input type="text" id="t1-name" placeholder="Enter team name..." maxlength="22" value="Team Alpha">
+      </div>
+      <div class="team-input-card t2">
+        <label>Team 2 🌊</label>
+        <input type="text" id="t2-name" placeholder="Enter team name..." maxlength="22" value="Team Beta">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-start" onclick="startGame()">🚀 Start the Game!</button>
+</div>
+
+<!-- ══════════ GAME SCREEN ══════════ -->
+<div class="screen" id="game-screen">
+  <div class="g-header">
+    <div class="score-block sb-t1">
+      <div class="score-avatar">🌸</div>
+      <div class="score-info">
+        <div class="score-tname" id="sh-t1">Team Alpha</div>
+        <div class="score-val" id="sv-1">0</div>
+      </div>
+    </div>
+
+    <div class="g-center">
+      <div class="g-qcount" id="g-qcount">1 / 20</div>
+      <div class="g-part-label" id="g-part-label">Part 1</div>
+      <div class="g-progress"><div class="g-progress-fill" id="g-prog" style="width:0%"></div></div>
+    </div>
+
+    <div class="score-block sb-t2" style="flex-direction:row-reverse;">
+      <div class="score-avatar">🌊</div>
+      <div class="score-info" style="text-align:right;">
+        <div class="score-tname" id="sh-t2">Team Beta</div>
+        <div class="score-val" id="sv-2">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g-body">
+    <!-- Part badge -->
+    <div class="part-badge part1" id="part-badge">📘 PART 1 — RANDOM VARIABLES</div>
+
+    <!-- Question card -->
+    <div class="q-card" id="q-card">
+      <div class="q-type-label" id="q-type-label">Identify / Classify</div>
+      <div class="q-text" id="q-text">Loading...</div>
+      <div id="q-extra"></div>
+    </div>
+
+    <!-- Answer choices (rendered dynamically) -->
+    <div id="choices-area"></div>
+
+    <!-- Answer reveal -->
+    <div class="answer-reveal" id="answer-reveal">
+      <div class="ar-label">✅ Correct Answer</div>
+      <div class="ar-text" id="ar-text"></div>
+      <div class="ar-explain" id="ar-explain"></div>
+    </div>
+
+    <!-- Who answered -->
+    <div class="who-panel" id="who-panel">
+      <div class="who-label">🙋 Which team answered?</div>
+      <div class="who-btns">
+        <button class="btn btn-sm btn-t1" id="give-t1-btn" onclick="givePoints(0)">✅ Give to Team 1</button>
+        <button class="btn btn-sm btn-t2" id="give-t2-btn" onclick="givePoints(1)">✅ Give to Team 2</button>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-bar">
+      <button class="btn btn-sm btn-reveal" id="reveal-btn" onclick="revealAnswer()">👁 Reveal Answer</button>
+      <button class="btn btn-sm btn-next" id="next-btn" onclick="nextQuestion()" disabled>Next ➜</button>
+      <button class="btn-skip" onclick="skipQ()">Skip ⏭</button>
+      <button class="btn-skip" onclick="toggleWhoPanel()">🖐 Who Answered?</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TRANSITION SCREEN ══════════ -->
+<div class="screen" id="transition-screen">
+  <div class="trans-badge">Part 1 Complete!</div>
+  <h2 class="trans-title">Now: Discrete<br>vs. Continuous</h2>
+  <p class="trans-desc">Great job on Random Variables! Now let's classify them — Discrete or Continuous?</p>
+  <div class="trans-score-preview">
+    <div class="tsp-card t1">
+      <div class="tsp-name" id="ts-t1">Team Alpha</div>
+      <div class="tsp-score" id="ts-s1">0</div>
+    </div>
+    <div class="tsp-card t2">
+      <div class="tsp-name" id="ts-t2">Team Beta</div>
+      <div class="tsp-score" id="ts-s2">0</div>
+    </div>
+  </div>
+  <button class="btn btn-start" onclick="startPart2()">Continue to Part 2 ➜</button>
+</div>
+
+<!-- ══════════ END SCREEN ══════════ -->
+<div class="screen" id="end-screen">
+  <div class="end-winner" id="end-winner">🏆 Winner!</div>
+  <div class="end-sub" id="end-sub">Congratulations!</div>
+  <div class="final-cards">
+    <div class="final-card t1">
+      <div class="fc-name" id="fc-n1">Team Alpha</div>
+      <div class="fc-score" id="fc-s1">0</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:2px;">POINTS</div>
+    </div>
+    <div class="final-card t2">
+      <div class="fc-name" id="fc-n2">Team Beta</div>
+      <div class="fc-score" id="fc-s2">0</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:2px;">POINTS</div>
+    </div>
+  </div>
+  <button class="btn btn-start" onclick="restartGame()">🔄 Play Again</button>
+</div>
+
+<!-- Points toast -->
+<div class="pts-toast" id="pts-toast">
+  <div class="pts-toast-val" id="pts-val">+2</div>
+  <div class="pts-toast-team" id="pts-team">Team Alpha</div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// QUESTIONS DATA
+// ══════════════════════════════════════
+
+const PART1 = [
+  // --- Concept Questions ---
+  {
+    type: 'mcq',
+    typeLabel: '📘 Definition',
+    text: 'What is a Random Variable?',
+    choices: [
+      'A variable whose values are determined by chance from a random experiment',
+      'A variable that always gives the same result every time',
+      'The sample space of an experiment',
+      'A letter used to label the sides of a die'
+    ],
+    answer: 0,
+    explain: 'A Random Variable is a numerical quantity derived from a random experiment — its value depends on chance!'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '📘 Definition',
+    text: 'How is a Random Variable usually represented?',
+    choices: [
+      'By a lowercase letter like x or y',
+      'By a Greek symbol like μ (mu)',
+      'By an uppercase letter like X',
+      'By a number in brackets like [X]'
+    ],
+    answer: 2,
+    explain: 'Random Variables use UPPERCASE letters (X, Y, Z), while lowercase x represents a specific value it can take.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '📘 Concepts',
+    text: 'A coin is tossed once. What is the sample space S?',
+    choices: [
+      'S = {1, 2}',
+      'S = {Head, Tail}',
+      'S = {Head}',
+      'S = {0, 1, 2}'
+    ],
+    answer: 1,
+    explain: 'The sample space is ALL possible outcomes. Tossing a coin gives Head or Tail — so S = {Head, Tail}.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '📘 Concepts',
+    text: 'A die is rolled once. What is the sample space S?',
+    choices: [
+      'S = {1, 2, 3}',
+      'S = {1, 2, 3, 4, 5}',
+      'S = {1, 2, 3, 4, 5, 6}',
+      'S = {2, 4, 6}'
+    ],
+    answer: 2,
+    explain: 'A standard die has 6 faces, so the sample space is S = {1, 2, 3, 4, 5, 6}.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '📘 Concepts',
+    text: 'What is the probability of getting a HEAD when you toss a fair coin once?',
+    choices: [
+      '1/4',
+      '1/3',
+      '1/2',
+      '2/3'
+    ],
+    answer: 2,
+    explain: 'There are 2 equally likely outcomes (H or T), and only 1 is a Head. So P(Head) = 1/2.'
+  },
+  // --- Applied: Coin toss 3 times ---
+  {
+    type: 'mcq',
+    typeLabel: '🪙 Coin Toss (3x)',
+    text: 'A coin is tossed THREE times. Let X = number of Heads. What are the possible values of X?',
+    choices: [
+      'X = {H, T}',
+      'X = {0, 1, 2, 3}',
+      'X = {1, 2, 3}',
+      'X = {0, 1, 2, 3, 4}'
+    ],
+    answer: 1,
+    explain: 'You can get 0 Heads (TTT), 1 Head, 2 Heads, or 3 Heads (HHH). So X = {0, 1, 2, 3}.'
+  },
+  {
+    type: 'table-fill',
+    typeLabel: '🪙 Coin Toss Table',
+    text: 'A coin is tossed three times. What is the value of X (number of Heads) for the outcome HHT?',
+    choices: ['0', '1', '2', '3'],
+    answer: 2,
+    explain: 'HHT has 2 Heads and 1 Tail — so X = 2.'
+  },
+  {
+    type: 'table-fill',
+    typeLabel: '🪙 Coin Toss Table',
+    text: 'What is the value of X for the outcome TTT (tossing a coin three times, X = number of Heads)?',
+    choices: ['0', '1', '2', '3'],
+    answer: 0,
+    explain: 'TTT has NO heads at all — so X = 0.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '🪙 Coin Toss (3x)',
+    text: 'When tossing a coin 3 times, how many possible outcomes are there in total?',
+    choices: ['4', '6', '8', '3'],
+    answer: 2,
+    explain: 'Each toss has 2 outcomes (H or T). For 3 tosses: 2³ = 8 possible outcomes (HHH, HHT, HTH, HTT, THH, THT, TTH, TTT).'
+  },
+  // --- Applied: Balls ---
+  {
+    type: 'mcq',
+    typeLabel: '🔴🔵 Drawing Balls',
+    text: 'Two balls are drawn from a jar with Red and Blue balls. Let X = number of Blue balls drawn. What is the sample space?',
+    choices: [
+      'S = {B, R}',
+      'S = {RR, RB, BR, BB}',
+      'S = {1, 2}',
+      'S = {0, 1, 2, 3}'
+    ],
+    answer: 1,
+    explain: 'Each draw gives R or B. Drawing twice without replacement gives: RR, RB, BR, BB — that\'s the sample space.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '🔴🔵 Drawing Balls',
+    text: 'For the outcome RB (Red then Blue), what is the value of X (number of Blue balls)?',
+    choices: ['0', '1', '2', '3'],
+    answer: 1,
+    explain: 'RB has exactly 1 Blue ball — so X = 1.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '🔴🔵 Drawing Balls',
+    text: 'What are the possible values of X (number of Blue balls) when drawing 2 balls from a jar of Red and Blue balls?',
+    choices: [
+      'X = {1, 2, 3}',
+      'X = {0, 1}',
+      'X = {0, 1, 2}',
+      'X = {R, B}'
+    ],
+    answer: 2,
+    explain: 'You can draw 0 Blue (RR), 1 Blue (RB or BR), or 2 Blue (BB) — so X = {0, 1, 2}.'
+  }
+];
+
+const PART2 = [
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The number of students randomly selected to be interviewed by a researcher.',
+    answer: 'discrete',
+    explain: 'You COUNT students — whole numbers only (1, 2, 3...). Can\'t interview 2.5 students!'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The weight in kilograms of randomly selected students.',
+    answer: 'continuous',
+    explain: 'Weight is MEASURED — can be 52.3 kg, 67.85 kg — any value between two numbers.'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The height in centimeters of a randomly selected student inside the library.',
+    answer: 'continuous',
+    explain: 'Height is MEASURED — can be 152.5 cm, 167.3 cm — it can take infinite values in a range.'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The number of points scored in the last season by a randomly selected PBA basketball player.',
+    answer: 'discrete',
+    explain: 'Points in basketball are COUNTED as whole numbers — you score exactly 1, 2, or 3 per basket. No decimals!'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The temperature of students in a school clinic.',
+    answer: 'continuous',
+    explain: 'Temperature is MEASURED — can be 36.5°C, 37.2°C — any real value in a range.'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The number of heads when a coin is tossed three times.',
+    answer: 'discrete',
+    explain: 'From our lesson: X = {0, 1, 2, 3} — finite, countable whole numbers only!'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The number of siblings each student has.',
+    answer: 'discrete',
+    explain: 'You COUNT siblings — always a whole number. You can\'t have 1.5 siblings!'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The exact amount of rainfall in millimeters recorded in Manila on a random day.',
+    answer: 'continuous',
+    explain: 'Rainfall is MEASURED — can be 12.34mm, 0.5mm, 100.009mm — any positive real value.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '📖 Definitions',
+    text: 'A Discrete Random Variable is one that...',
+    choices: [
+      'Can take any value, including fractions and decimals',
+      'Can only take a finite, countable number of distinct whole number values',
+      'Is always measured, never counted',
+      'Has an infinite number of values in any interval'
+    ],
+    answer: 1,
+    explain: 'Discrete = countable whole numbers. Think: number of students, number of heads, number of goals.'
+  },
+  {
+    type: 'mcq',
+    typeLabel: '📖 Definitions',
+    text: 'A Continuous Random Variable is one that...',
+    choices: [
+      'Can only take whole number values',
+      'Must always be a negative number',
+      'Can assume an infinite number of values in an interval — including fractions and decimals',
+      'Has only 2 possible values'
+    ],
+    answer: 2,
+    explain: 'Continuous = measurable, can take any real value in a range. Think: height, weight, temperature, time.'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The number of text messages sent by a student in one day.',
+    answer: 'discrete',
+    explain: 'You COUNT messages — always a whole number (0, 1, 5, 100...). Can\'t send half a text!'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The time (in minutes) it takes a student to travel from home to school.',
+    answer: 'continuous',
+    explain: 'Time is MEASURED — could be 23.5 minutes, 45.78 minutes — any positive real value.'
+  },
+  {
+    type: 'dc',
+    typeLabel: '🎯 Discrete or Continuous?',
+    text: 'The number of blue balls drawn from a jar containing red and blue balls.',
+    answer: 'discrete',
+    explain: 'From our lesson example: X = {0, 1, 2} — you COUNT the balls, whole numbers only!'
+  },
+];
+
+// ══════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════
+let scores = [0, 0];
+let teamNames = ['Team Alpha', 'Team Beta'];
+let currentPart = 1;       // 1 or 2
+let currentQIndex = 0;
+let allQuestions = [];
+let currentQ = null;
+let revealedAlready = false;
+let pendingAnswerType = null; // 'dc' or 'mcq' -- for who-panel
+let pendingAnswerValue = null; // the answer that was buzzed
+
+// ══════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════
+function startGame() {
+  teamNames[0] = document.getElementById('t1-name').value.trim() || 'Team Alpha';
+  teamNames[1] = document.getElementById('t2-name').value.trim() || 'Team Beta';
+
+  document.getElementById('sh-t1').textContent = teamNames[0];
+  document.getElementById('sh-t2').textContent = teamNames[1];
+  document.getElementById('give-t1-btn').textContent = `✅ ${teamNames[0]}`;
+  document.getElementById('give-t2-btn').textContent = `✅ ${teamNames[1]}`;
+
+  scores = [0, 0];
+  currentPart = 1;
+  currentQIndex = 0;
+  allQuestions = PART1;
+
+  updateScoreDisplay();
+  showScreen('game-screen');
+  loadQuestion();
+}
+
+function startPart2() {
+  currentPart = 2;
+  currentQIndex = 0;
+  allQuestions = PART2;
+  showScreen('game-screen');
+  loadQuestion();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════
+// QUESTION LOADING
+// ══════════════════════════════════════
+function loadQuestion() {
+  if (currentQIndex >= allQuestions.length) {
+    if (currentPart === 1) {
+      // Show transition
+      document.getElementById('ts-t1').textContent = teamNames[0];
+      document.getElementById('ts-t2').textContent = teamNames[1];
+      document.getElementById('ts-s1').textContent = scores[0];
+      document.getElementById('ts-s2').textContent = scores[1];
+      showScreen('transition-screen');
+    } else {
+      endGame();
+    }
+    return;
+  }
+
+  currentQ = allQuestions[currentQIndex];
+  revealedAlready = false;
+  pendingAnswerType = null;
+  pendingAnswerValue = null;
+
+  const total = allQuestions.length;
+  const qnum = currentQIndex + 1;
+
+  document.getElementById('g-qcount').textContent = `${qnum} / ${total}`;
+  document.getElementById('g-part-label').textContent = `Part ${currentPart} — ${currentPart === 1 ? 'Random Variables' : 'Discrete vs Continuous'}`;
+  document.getElementById('g-prog').style.width = `${((qnum - 1) / total) * 100}%`;
+
+  // Part badge
+  const badge = document.getElementById('part-badge');
+  if (currentPart === 1) {
+    badge.className = 'part-badge part1';
+    badge.textContent = '📘 PART 1 — RANDOM VARIABLES';
+  } else {
+    badge.className = 'part-badge part2';
+    badge.textContent = '🎯 PART 2 — DISCRETE vs CONTINUOUS';
+  }
+
+  // Question card
+  document.getElementById('q-type-label').textContent = currentQ.typeLabel || 'Question';
+  document.getElementById('q-text').textContent = currentQ.text;
+  document.getElementById('q-extra').innerHTML = '';
+
+  // Answer reveal reset
+  document.getElementById('answer-reveal').classList.remove('show');
+  document.getElementById('who-panel').classList.remove('show');
+  document.getElementById('next-btn').disabled = true;
+  document.getElementById('reveal-btn').disabled = false;
+
+  // Render choices
+  renderChoices(currentQ);
+}
+
+function renderChoices(q) {
+  const area = document.getElementById('choices-area');
+  area.innerHTML = '';
+
+  if (q.type === 'dc') {
+    const div = document.createElement('div');
+    div.className = 'dc-buttons';
+    div.innerHTML = `
+      <button class="dc-btn dc-discrete" id="dc-dis" onclick="dcAnswer('discrete')">🎯 DISCRETE</button>
+      <button class="dc-btn dc-continuous" id="dc-con" onclick="dcAnswer('continuous')">〰️ CONTINUOUS</button>
+    `;
+    area.appendChild(div);
+  } else {
+    // MCQ
+    const letters = ['A', 'B', 'C', 'D'];
+    const grid = document.createElement('div');
+    grid.className = 'choices-grid one-col';
+    q.choices.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.id = `choice-${i}`;
+      btn.onclick = () => mcqAnswer(i);
+      btn.innerHTML = `<span class="choice-letter">${letters[i]}</span>${c}`;
+      grid.appendChild(btn);
+    });
+    area.appendChild(grid);
+  }
+}
+
+// ══════════════════════════════════════
+// ANSWERING
+// ══════════════════════════════════════
+function dcAnswer(val) {
+  // Lock buttons
+  document.getElementById('dc-dis').classList.add('locked');
+  document.getElementById('dc-con').classList.add('locked');
+  document.getElementById('dc-dis').onclick = null;
+  document.getElementById('dc-con').onclick = null;
+
+  pendingAnswerType = 'dc';
+  pendingAnswerValue = val;
+
+  // Show who-panel for teacher to assign
+  document.getElementById('who-panel').classList.add('show');
+}
+
+function mcqAnswer(idx) {
+  // Lock all buttons
+  document.querySelectorAll('.choice-btn').forEach(b => {
+    b.classList.add('locked');
+    b.onclick = null;
+  });
+
+  pendingAnswerType = 'mcq';
+  pendingAnswerValue = idx;
+
+  document.getElementById('who-panel').classList.add('show');
+}
+
+function givePoints(teamIdx) {
+  document.getElementById('who-panel').classList.remove('show');
+
+  let correct = false;
+
+  if (pendingAnswerType === 'dc') {
+    correct = (pendingAnswerValue === currentQ.answer);
+    // Highlight buttons
+    const disBtn = document.getElementById('dc-dis');
+    const conBtn = document.getElementById('dc-con');
+    if (correct) {
+      const winBtn = currentQ.answer === 'discrete' ? disBtn : conBtn;
+      winBtn.classList.add('correct-dc');
+    } else {
+      const wrongBtn = pendingAnswerValue === 'discrete' ? disBtn : conBtn;
+      wrongBtn.classList.add('wrong-dc');
+      const correctBtn = currentQ.answer === 'discrete' ? disBtn : conBtn;
+      correctBtn.classList.add('correct-dc');
+    }
+  } else if (pendingAnswerType === 'mcq') {
+    correct = (pendingAnswerValue === currentQ.answer);
+    const chosen = document.getElementById(`choice-${pendingAnswerValue}`);
+    const correctEl = document.getElementById(`choice-${currentQ.answer}`);
+    correctEl.classList.add('correct-anim');
+    if (!correct && chosen) chosen.classList.add('wrong-anim');
+  }
+
+  if (correct) {
+    scores[teamIdx] += 1;
+    updateScoreDisplay(teamIdx);
+    showToast('+1', teamIdx);
+    if (!revealedAlready) showFireworks();
+  }
+
+  showAnswerReveal();
+  document.getElementById('next-btn').disabled = false;
+  document.getElementById('reveal-btn').disabled = true;
+}
+
+function toggleWhoPanel() {
+  const panel = document.getElementById('who-panel');
+  if (panel.classList.contains('show')) {
+    panel.classList.remove('show');
+  } else {
+    // Lock everything
+    lockAllAnswerButtons();
+    panel.classList.add('show');
+  }
+}
+
+function lockAllAnswerButtons() {
+  document.querySelectorAll('.dc-btn, .choice-btn').forEach(b => {
+    b.classList.add('locked');
+    b.onclick = null;
+  });
+}
+
+// ══════════════════════════════════════
+// REVEAL
+// ══════════════════════════════════════
+function revealAnswer() {
+  revealedAlready = true;
+  document.getElementById('reveal-btn').disabled = true;
+
+  // Highlight correct answer visually
+  if (currentQ.type === 'dc') {
+    const disBtn = document.getElementById('dc-dis');
+    const conBtn = document.getElementById('dc-con');
+    if (disBtn) disBtn.classList.add('locked');
+    if (conBtn) conBtn.classList.add('locked');
+    if (disBtn) disBtn.onclick = null;
+    if (conBtn) conBtn.onclick = null;
+    const correctBtn = currentQ.answer === 'discrete' ? disBtn : conBtn;
+    if (correctBtn) correctBtn.classList.add('correct-dc');
+  } else {
+    document.querySelectorAll('.choice-btn').forEach(b => {
+      b.classList.add('locked');
+      b.onclick = null;
+    });
+    const correctEl = document.getElementById(`choice-${currentQ.answer}`);
+    if (correctEl) correctEl.classList.add('correct-anim');
+  }
+
+  showAnswerReveal();
+  document.getElementById('next-btn').disabled = false;
+  document.getElementById('who-panel').classList.remove('show');
+}
+
+function showAnswerReveal() {
+  const rev = document.getElementById('answer-reveal');
+  rev.classList.add('show');
+
+  let answerText = '';
+  if (currentQ.type === 'dc') {
+    answerText = currentQ.answer === 'discrete' ? '🎯 DISCRETE' : '〰️ CONTINUOUS';
+  } else {
+    const letters = ['A', 'B', 'C', 'D'];
+    answerText = `${letters[currentQ.answer]}: ${currentQ.choices[currentQ.answer]}`;
+  }
+
+  document.getElementById('ar-text').textContent = answerText;
+  document.getElementById('ar-explain').textContent = currentQ.explain || '';
+}
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+function nextQuestion() {
+  currentQIndex++;
+  loadQuestion();
+}
+
+function skipQ() {
+  currentQIndex++;
+  loadQuestion();
+}
+
+// ══════════════════════════════════════
+// END GAME
+// ══════════════════════════════════════
+function endGame() {
+  showScreen('end-screen');
+  document.getElementById('fc-n1').textContent = teamNames[0];
+  document.getElementById('fc-n2').textContent = teamNames[1];
+  document.getElementById('fc-s1').textContent = scores[0];
+  document.getElementById('fc-s2').textContent = scores[1];
+
+  const w = document.getElementById('end-winner');
+  const s = document.getElementById('end-sub');
+
+  if (scores[0] > scores[1]) {
+    w.textContent = `🏆 ${teamNames[0]} Wins!`;
+    w.style.background = 'linear-gradient(135deg, var(--pink), var(--purple))';
+    w.style.webkitBackgroundClip = 'text';
+    w.style.webkitTextFillColor = 'transparent';
+    w.style.backgroundClip = 'text';
+    s.textContent = `Final score: ${scores[0]} vs ${scores[1]}`;
+  } else if (scores[1] > scores[0]) {
+    w.textContent = `🏆 ${teamNames[1]} Wins!`;
+    w.style.background = 'linear-gradient(135deg, var(--blue), var(--green))';
+    w.style.webkitBackgroundClip = 'text';
+    w.style.webkitTextFillColor = 'transparent';
+    w.style.backgroundClip = 'text';
+    s.textContent = `Final score: ${scores[1]} vs ${scores[0]}`;
+  } else {
+    w.textContent = `🤝 It's a Tie!`;
+    w.style.background = 'linear-gradient(135deg, var(--yellow), var(--green))';
+    w.style.webkitBackgroundClip = 'text';
+    w.style.webkitTextFillColor = 'transparent';
+    w.style.backgroundClip = 'text';
+    s.textContent = `Both teams scored ${scores[0]} points — incredible!`;
+  }
+
+  setTimeout(showFireworks, 100);
+  setTimeout(showFireworks, 450);
+  setTimeout(showFireworks, 800);
+}
+
+function restartGame() {
+  showScreen('title-screen');
+}
+
+// ══════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════
+function updateScoreDisplay(popTeam) {
+  document.getElementById('sv-1').textContent = scores[0];
+  document.getElementById('sv-2').textContent = scores[1];
+  if (popTeam === 0) {
+    const el = document.getElementById('sv-1');
+    el.classList.remove('score-pop');
+    void el.offsetWidth;
+    el.classList.add('score-pop');
+  } else if (popTeam === 1) {
+    const el = document.getElementById('sv-2');
+    el.classList.remove('score-pop');
+    void el.offsetWidth;
+    el.classList.add('score-pop');
+  }
+}
+
+function showToast(pts, teamIdx) {
+  const toast = document.getElementById('pts-toast');
+  document.getElementById('pts-val').textContent = pts;
+  document.getElementById('pts-team').textContent = teamNames[teamIdx];
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1600);
+}
+
+function showFireworks() {
+  const colors = ['#ff006e','#3a86ff','#ffbe0b','#06d6a0','#8338ec'];
+  const cx = 100 + Math.random() * (window.innerWidth - 200);
+  const cy = 80 + Math.random() * (window.innerHeight * 0.5);
+  for (let i = 0; i < 16; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'fw-dot';
+    const angle = (Math.PI * 2 * i) / 16;
+    const dist = 60 + Math.random() * 80;
+    const size = 5 + Math.random() * 7;
+    dot.style.cssText = `
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:${cx}px; top:${cy}px;
+      --tx:${Math.cos(angle)*dist}px;
+      --ty:${Math.sin(angle)*dist}px;
+      animation-duration:${0.55+Math.random()*.35}s;
+    `;
+    document.body.appendChild(dot);
+    setTimeout(() => dot.remove(), 1000);
+  }
+}
+</script>
+</body>
+</html>
